@@ -11,8 +11,6 @@
   html,body{background:var(--card)}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);
        padding-bottom:calc(96px + env(safe-area-inset-bottom));font-size:16px}
-
-  /* Centered column on big screens, full-width on phones */
   .wrap{max-width:640px;margin:0 auto}
 
   header{background:var(--green);color:#fff;padding:16px;padding-top:calc(16px + env(safe-area-inset-top))}
@@ -21,27 +19,30 @@
   header .sub{font-size:13px;opacity:.9;margin-top:2px}
 
   .bar{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px}
+  .bar .who{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .bar .who input{flex:1;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit}
+  .bar .who input.miss{border-color:var(--red);background:#fdeeee}
   .bar .date{display:flex;align-items:center;gap:10px}
-  .bar label{font-size:13px;font-weight:700;color:var(--muted)}
+  .bar label{font-size:13px;font-weight:700;color:var(--muted);min-width:74px}
   .bar input[type=date]{flex:1;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit}
   .remind{margin-top:10px;font-size:13px;color:var(--amber);background:#fff7e6;border:1px solid #f0dca8;border-radius:10px;padding:10px 12px;line-height:1.4}
   .legend{padding:8px 16px 0;font-size:12px;color:var(--muted)}
 
   .cat{padding:20px 16px 0;font-size:13px;font-weight:800;color:var(--green-d);text-transform:uppercase;letter-spacing:.04em}
   .grid{margin:8px 12px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .row{padding:13px 14px;border-top:1px solid var(--line)}
+  .row{padding:13px 14px;border-top:1px solid var(--line);transition:background .12s}
   .row:first-child{border-top:none}
+  .row.done{background:var(--green-bg)}
   .row .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:9px}
   .row .name{font-size:16px;font-weight:700}
+  .row.done .name::after{content:' ✓';color:var(--green);font-weight:800}
   .row .now{font-size:12px;color:var(--muted);white-space:nowrap}
   .row .now .LOW{color:var(--red);font-weight:800}
   .ctrl{display:flex;align-items:center;gap:12px}
   .ctrl input.count{width:120px;height:50px;padding:8px;border:1.5px solid var(--line);border-radius:12px;font-size:20px;font-weight:700;text-align:center}
-  .ctrl input.count.filled{border-color:var(--green);background:var(--green-bg)}
+  .ctrl input.count.filled{border-color:var(--green);background:#fff}
+  .ctrl input.count.flag{border-color:var(--amber);background:#fff7e6}
   .ctrl .unit{font-size:14px;color:var(--muted)}
-  .bar .who{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-  .bar .who input{flex:1;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit}
-  .bar .who input.miss{border-color:var(--red);background:#fdeeee}
 
   .weeklytoggle{margin:20px 12px 0}
   .weeklytoggle button{width:100%;padding:14px;border:1.5px dashed var(--green);background:#fff;color:var(--green-d);border-radius:12px;font-size:15px;font-weight:700}
@@ -51,7 +52,7 @@
   .footer{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
           padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
   .footer .finner{max-width:640px;margin:0 auto;display:flex;gap:12px;align-items:center}
-  .footer .count{flex:1;font-size:14px;color:var(--muted)}
+  .footer .count{flex:1;font-size:14px;color:var(--muted);font-weight:700}
   .footer button{padding:15px 24px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:800}
   .footer button:disabled{background:#a8c3b1}
 
@@ -71,10 +72,10 @@
 <main class="wrap">
   <div class="bar">
     <div class="who"><label>Your name</label><input type="text" id="staff" placeholder="Type your name" oninput="onStaff()"></div>
-    <div class="date"><label>Count date</label><input type="date" id="date"></div>
+    <div class="date"><label>Count date</label><input type="date" id="date" onchange="onDateChange()"></div>
     <div class="remind">📋 Count <b>sealed / unopened</b> stock only — don't count opened packs. Deliveries are already included once they're unpacked and shelved.</div>
   </div>
-  <div class="legend">Enter your name once, then type how many full units you have for each item.</div>
+  <div class="legend">Type how many full units you have for each item. Counted items turn green ✓. Your progress is saved automatically.</div>
 
   <div id="daily"></div>
 
@@ -95,6 +96,10 @@
   var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyAxBwH6bjIgWCklPso8IWNn63otnUr2QroyJosDRjR9tw-OJ_ymmVJPbA4PosBMAzh/exec';
   var STATE=null;
 
+  function staffVal(){ return (document.getElementById('staff').value||'').trim(); }
+  function dateVal(){ return document.getElementById('date').value; }
+  function esc(s){ return String(s).replace(/"/g,'&quot;'); }
+
   function load(){
     fetch(WEBAPP_URL).then(function(r){return r.json();}).then(function(s){
       if(!s.ok) throw new Error(s.error||'load failed');
@@ -106,6 +111,7 @@
       renderSection('weekly', s.items.filter(function(i){return i.freq==='Weekly';}));
       if(s.isWeeklyDay){ document.getElementById('weekly-wrap').classList.add('show'); }
       else { document.getElementById('weeklytoggle').style.display='block'; }
+      restoreDraft();           // bring back any unsaved progress for this date
       updateCounter();
     }).catch(function(e){
       document.getElementById('daily').innerHTML='<div class="loading">Could not load. Check the web app URL.<br><small>'+e.message+'</small></div>';
@@ -115,9 +121,8 @@
   function showWeekly(){
     document.getElementById('weekly-wrap').classList.add('show');
     document.getElementById('weeklytoggle').style.display='none';
+    updateCounter();
   }
-
-  function esc(s){return String(s).replace(/"/g,'&quot;');}
 
   function renderSection(where, items){
     var cats=[]; items.forEach(function(i){if(cats.indexOf(i.category)<0)cats.push(i.category);});
@@ -128,7 +133,7 @@
         var now = (it.level==null)?'—':(it.level+' '+it.countUnit);
         var lowCls = (it.status==='LOW'||it.status==='OUT')?' class="LOW"':'';
         html+=
-          '<div class="row" data-item="'+esc(it.item)+'">'+
+          '<div class="row" data-item="'+esc(it.item)+'" data-last="'+(it.level==null?'':it.level)+'">'+
             '<div class="top"><span class="name">'+it.item+'</span>'+
               '<span class="now">now: <span'+lowCls+'>'+now+'</span></span></div>'+
             '<div class="ctrl">'+
@@ -142,42 +147,95 @@
     document.getElementById(where).innerHTML=html;
   }
 
-  function onInput(el){ el.classList.toggle('filled', el.value!=='' && !isNaN(Number(el.value))); updateCounter(); }
-  function onStaff(){ document.getElementById('staff').classList.remove('miss'); updateCounter(); }
+  function onInput(el){
+    var row=el.closest('.row');
+    var has=(el.value!=='' && !isNaN(Number(el.value)));
+    el.classList.toggle('filled', has);
+    row.classList.toggle('done', has);
+    // Gentle sanity flag: value wildly higher than last count (likely a typo — or a big delivery).
+    var last=Number(row.getAttribute('data-last')), v=Number(el.value);
+    el.classList.toggle('flag', has && !isNaN(last) && last>=2 && v>last*6 && (v-last)>=15);
+    saveDraft();
+    updateCounter();
+  }
+  function onStaff(){ document.getElementById('staff').classList.remove('miss'); saveDraft(); updateCounter(); }
 
+  function visibleRows(){
+    return Array.prototype.slice.call(document.querySelectorAll('.row[data-item]'))
+      .filter(function(r){ return r.offsetParent!==null; });   // skip hidden weekly rows
+  }
   function collect(){
     var out=[];
-    document.querySelectorAll('.row[data-item]').forEach(function(row){
-      if(row.offsetParent===null) return;                 // skip hidden (weekly not shown)
-      var count=row.querySelector('.count').value;
-      if(count!=='' && !isNaN(Number(count))) out.push({item:row.getAttribute('data-item'), count:Number(count)});
+    visibleRows().forEach(function(row){
+      var v=row.querySelector('.count').value;
+      if(v!=='' && !isNaN(Number(v))) out.push({item:row.getAttribute('data-item'), count:Number(v)});
     });
     return out;
   }
 
   function updateCounter(){
-    var n=collect().length;
-    var name=(document.getElementById('staff').value||'').trim();
-    document.getElementById('counter').textContent = !name ? 'Enter your name to start'
-      : (n ? (n+' item'+(n>1?'s':'')+' to log') : 'Nothing entered yet');
-    document.getElementById('saveBtn').disabled = (n===0 || !name);
+    var total=visibleRows().length;
+    var done=collect().length;
+    var name=staffVal();
+    document.getElementById('counter').textContent =
+      !name ? 'Enter your name to start' : (done+' / '+total+' counted');
+    document.getElementById('saveBtn').disabled = (done===0 || !name);
+  }
+
+  // ---- draft autosave (a reload or screen-lock won't lose the count) ----
+  function draftKey(){ return 'gm_draft_'+dateVal(); }
+  function saveDraft(){
+    var d={items:{}};
+    document.querySelectorAll('.row[data-item]').forEach(function(r){
+      var v=r.querySelector('.count').value; if(v!=='') d.items[r.getAttribute('data-item')]=v;
+    });
+    try{ localStorage.setItem(draftKey(), JSON.stringify(d)); }catch(e){}
+  }
+  function clearDraft(){ try{ localStorage.removeItem(draftKey()); }catch(e){} }
+  function restoreDraft(){
+    var raw=null; try{ raw=localStorage.getItem(draftKey()); }catch(e){}
+    if(!raw) return;
+    var d=null; try{ d=JSON.parse(raw); }catch(e){ return; }
+    if(!d||!d.items) return;
+    document.querySelectorAll('.row[data-item]').forEach(function(r){
+      var item=r.getAttribute('data-item');
+      if(d.items[item]!=null){ var el=r.querySelector('.count'); el.value=d.items[item]; onInput(el); }
+    });
+  }
+  function onDateChange(){
+    document.querySelectorAll('.row[data-item] .count').forEach(function(el){
+      el.value=''; el.classList.remove('filled','flag'); el.closest('.row').classList.remove('done');
+    });
+    restoreDraft(); updateCounter();
   }
 
   function save(){
-    var name=(document.getElementById('staff').value||'').trim();
+    var name=staffVal();
     if(!name){ document.getElementById('staff').classList.add('miss'); toast('Enter your name first',true); return; }
+    var rows=visibleRows();
+    var entered=collect();
+    var missing=rows.length-entered.length;
+    var flagged=rows.filter(function(r){ return r.querySelector('.count').classList.contains('flag'); })
+      .map(function(r){ return r.getAttribute('data-item')+' → '+r.querySelector('.count').value+' (last '+(r.getAttribute('data-last')||'?')+')'; });
+
+    var warn='';
+    if(missing>0) warn+= missing+' item'+(missing>1?'s':'')+' still have no count.\n';
+    if(flagged.length) warn+='\nLooks unusual vs last count:\n• '+flagged.join('\n• ')+'\n';
+    if(warn && !window.confirm(warn+'\nSubmit anyway?')) return;
+
     try{ localStorage.setItem('gm_staff', name); }catch(e){}
-    var payload={ date:document.getElementById('date').value, staff:name, counts:collect() };
+    var payload={ date:dateVal(), staff:name, counts:entered };
     var btn=document.getElementById('saveBtn'); btn.disabled=true; btn.textContent='Saving…';
     fetch(WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();}).then(function(res){
         btn.disabled=false; btn.textContent='Submit';
-        if(res.ok){ toast('✅ '+res.message,false); load(); }
+        if(res.ok){ clearDraft(); toast('✅ '+res.message,false); load(); }
         else { toast('⚠ '+(res.error||'Failed'),true); }
       }).catch(function(e){ btn.disabled=false; btn.textContent='Submit'; toast('⚠ '+e.message,true); });
   }
 
   function toast(m,err){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='';},4000);}
+
   try{ document.getElementById('staff').value = localStorage.getItem('gm_staff')||''; }catch(e){}
   load();
 </script>
