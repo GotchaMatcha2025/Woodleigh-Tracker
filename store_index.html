@@ -39,9 +39,9 @@
   .ctrl input.count{width:120px;height:50px;padding:8px;border:1.5px solid var(--line);border-radius:12px;font-size:20px;font-weight:700;text-align:center}
   .ctrl input.count.filled{border-color:var(--green);background:var(--green-bg)}
   .ctrl .unit{font-size:14px;color:var(--muted)}
-  .ctrl .cant{margin-left:auto;font-size:13px;font-weight:700;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;background:#fff;color:var(--muted);white-space:nowrap}
-  .ctrl .cant.on{border-color:var(--amber);background:#fff7e6;color:var(--amber)}
-  .row.cantOn input.count{opacity:.4;pointer-events:none;background:#f3f3f3}
+  .bar .who{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .bar .who input{flex:1;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit}
+  .bar .who input.miss{border-color:var(--red);background:#fdeeee}
 
   .weeklytoggle{margin:20px 12px 0}
   .weeklytoggle button{width:100%;padding:14px;border:1.5px dashed var(--green);background:#fff;color:var(--green-d);border-radius:12px;font-size:15px;font-weight:700}
@@ -70,10 +70,11 @@
 
 <main class="wrap">
   <div class="bar">
+    <div class="who"><label>Your name</label><input type="text" id="staff" placeholder="Type your name" oninput="onStaff()"></div>
     <div class="date"><label>Count date</label><input type="date" id="date"></div>
     <div class="remind">📋 Count <b>sealed / unopened</b> stock only — don't count opened packs. Deliveries are already included once they're unpacked and shelved.</div>
   </div>
-  <div class="legend">For each item: type how many full units you have now, or tap <b>Can't count</b> if it's full / too many.</div>
+  <div class="legend">Enter your name once, then type how many full units you have for each item.</div>
 
   <div id="daily"></div>
 
@@ -133,7 +134,6 @@
             '<div class="ctrl">'+
               '<input class="count" inputmode="decimal" placeholder="count" oninput="onInput(this)">'+
               '<span class="unit">'+it.countUnit+'</span>'+
-              '<button class="cant" onclick="toggleCant(this)">Can\'t count</button>'+
             '</div>'+
           '</div>';
       });
@@ -143,34 +143,31 @@
   }
 
   function onInput(el){ el.classList.toggle('filled', el.value!=='' && !isNaN(Number(el.value))); updateCounter(); }
-  function toggleCant(btn){
-    var row=btn.closest('.row'); row.classList.toggle('cantOn'); btn.classList.toggle('on');
-    if(row.classList.contains('cantOn')){ var c=row.querySelector('.count'); c.value=''; c.classList.remove('filled'); }
-    updateCounter();
-  }
+  function onStaff(){ document.getElementById('staff').classList.remove('miss'); updateCounter(); }
 
   function collect(){
     var out=[];
     document.querySelectorAll('.row[data-item]').forEach(function(row){
       if(row.offsetParent===null) return;                 // skip hidden (weekly not shown)
-      var item=row.getAttribute('data-item');
-      var countEl=row.querySelector('.count');
-      var cant=row.classList.contains('cantOn');
-      var count=countEl.value;
-      var has=(count!=='' && !isNaN(Number(count)));
-      if(has||cant) out.push({item:item, count:has?Number(count):'', cantCount:cant});
+      var count=row.querySelector('.count').value;
+      if(count!=='' && !isNaN(Number(count))) out.push({item:row.getAttribute('data-item'), count:Number(count)});
     });
     return out;
   }
 
   function updateCounter(){
     var n=collect().length;
-    document.getElementById('counter').textContent = n? (n+' item'+(n>1?'s':'')+' to log') : 'Nothing entered yet';
-    document.getElementById('saveBtn').disabled = (n===0);
+    var name=(document.getElementById('staff').value||'').trim();
+    document.getElementById('counter').textContent = !name ? 'Enter your name to start'
+      : (n ? (n+' item'+(n>1?'s':'')+' to log') : 'Nothing entered yet');
+    document.getElementById('saveBtn').disabled = (n===0 || !name);
   }
 
   function save(){
-    var payload={ date:document.getElementById('date').value, counts:collect() };
+    var name=(document.getElementById('staff').value||'').trim();
+    if(!name){ document.getElementById('staff').classList.add('miss'); toast('Enter your name first',true); return; }
+    try{ localStorage.setItem('gm_staff', name); }catch(e){}
+    var payload={ date:document.getElementById('date').value, staff:name, counts:collect() };
     var btn=document.getElementById('saveBtn'); btn.disabled=true; btn.textContent='Saving…';
     fetch(WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();}).then(function(res){
@@ -181,6 +178,7 @@
   }
 
   function toast(m,err){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='';},4000);}
+  try{ document.getElementById('staff').value = localStorage.getItem('gm_staff')||''; }catch(e){}
   load();
 </script>
 </body>
