@@ -153,6 +153,10 @@
 <script>
   // ====== Deployed web app URL (ends in /exec) ======
   var WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyAxBwH6bjIgWCklPso8IWNn63otnUr2QroyJosDRjR9tw-OJ_ymmVJPbA4PosBMAzh/exec';
+  // Outlet list for the picker. The backend's list wins once deployed; this is
+  // the fallback so the picker always shows. KEEP IN SYNC with CFG.OUTLETS in store_Code.gs.
+  var FALLBACK_OUTLETS = ['Woodleigh','New Outlet'];
+  function outletsList(s){ return (s && s.outlets && s.outlets.length>=2) ? s.outlets : FALLBACK_OUTLETS; }
   var VIEW='count', STATE=null, OUTLET=null, OVERRIDE=false;
 
   function staffVal(){ return (document.getElementById('staff').value||'').trim(); }
@@ -194,8 +198,8 @@
     document.getElementById('daily').innerHTML='<div class="loading">Loading…</div>';
     fetch(url).then(function(r){return r.json();}).then(function(s){
       if(!s.ok) throw new Error(s.error||'load failed');
-      STATE=s; OUTLET=s.outlet;
-      renderOutlets(s.outlets, s.outlet);
+      STATE=s; if(s.outlet) OUTLET=s.outlet;
+      renderOutlets(outletsList(s), OUTLET);
       document.getElementById('sub').textContent =
         (s.isWeeklyDay ? ('Today is '+s.weeklyDayName+' — daily + weekly') : 'Daily count') + ' · ' + s.today;
       document.getElementById('date').value=s.today;
@@ -335,8 +339,8 @@
     document.getElementById('summary').innerHTML='';
     fetch(url).then(function(r){return r.json();}).then(function(s){
       if(!s.ok) throw new Error(s.error||'load failed');
-      OUTLET=s.outlet;
-      renderOutlets(s.outlets, s.outlet);
+      if(s.outlet) OUTLET=s.outlet;
+      renderOutlets(outletsList(s), OUTLET);
       document.getElementById('sub').textContent='As of '+s.generatedAt;
       renderCountBadge(s.countedToday);
       renderSummary(s.items);
@@ -393,7 +397,7 @@
   function toast(m,err){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='';},4000);}
 
   try{ document.getElementById('staff').value = localStorage.getItem('gm_staff')||''; }catch(e){}
-  OUTLET = savedOutlet();
+  OUTLET = savedOutlet() || FALLBACK_OUTLETS[0];
   loadCount();
 </script>
 </body>
