@@ -1,210 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Expense Submission — Gotcha Matcha</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --green:#2d6a4f; --green-light:#52b788; --green-bg:#eaf7f0; --bg:#f4f7f4;
-            --card:#fff; --border:#d8e8d8; --text:#1a2e1a; --muted:#6b8f71; --red:#c0392b; }
-    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text);
-           min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:20px 16px 48px; }
-    header { text-align:center; margin-bottom:20px; }
-    header .logo { font-size:30px; }
-    header h1 { font-size:18px; font-weight:700; color:var(--green); margin-top:4px; }
-    header p { font-size:12px; color:var(--muted); margin-top:2px; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px;
-            width:100%; max-width:480px; box-shadow:0 2px 12px rgba(0,0,0,.06); }
-    .upload-zone { border:2px dashed var(--border); border-radius:12px; padding:24px 16px; text-align:center;
-                   cursor:pointer; transition:border-color .15s,background .15s; position:relative; margin-bottom:12px; }
-    .upload-zone:hover { border-color:var(--green-light); background:#f0faf0; }
-    .upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-    .upload-zone .icon { font-size:32px; }
-    .upload-zone p { font-size:13px; color:var(--muted); margin-top:6px; }
-    .upload-zone strong { color:var(--green); }
-    #thumb-list { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
-    .thumb-item { position:relative; width:72px; height:72px; flex-shrink:0; }
-    .thumb-item img { width:100%; height:100%; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
-    .thumb-item .remove-thumb { position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%;
-      background:var(--red); color:#fff; border:none; font-size:11px; cursor:pointer; line-height:18px; text-align:center; font-weight:700; padding:0; }
-    .thumb-item .status-badge { position:absolute; bottom:2px; left:0; right:0; text-align:center; font-size:10px; font-weight:700;
-      padding:1px 0; background:rgba(0,0,0,.55); color:#fff; border-radius:0 0 7px 7px; }
-    .thumb-item .status-badge.ok { background:rgba(45,106,79,.8); }
-    .thumb-item .status-badge.err { background:rgba(192,57,43,.8); }
-    .file-count { font-size:12px; color:var(--muted); margin-bottom:12px; }
-    .clear-btn { display:block; font-size:12px; color:var(--red); background:none; border:none; cursor:pointer; text-decoration:underline; margin-bottom:12px; }
-    .chip-group { display:flex; flex-wrap:wrap; gap:8px; }
-    .chip { padding:11px 18px; border-radius:20px; font-size:15px; font-weight:600; border:1.5px solid var(--border);
-            background:#fff; color:var(--muted); cursor:pointer; transition:all .15s; user-select:none; }
-    .chip:hover { border-color:var(--green-light); color:var(--green); }
-    .chip.active { border-color:var(--green); background:var(--green-bg); color:var(--green); }
-    .field { margin-bottom:18px; }
-    label { display:block; font-size:13px; font-weight:700; margin-bottom:8px; color:var(--text); }
-    label .req { color:var(--red); }
-    textarea { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:16px;
-               color:var(--text); background:#fff; resize:vertical; min-height:68px; font-family:inherit; }
-    textarea:focus { outline:none; border-color:var(--green-light); }
-    select, input[type=password] { width:100%; padding:12px; border:1.5px solid var(--border); border-radius:10px;
-             font-size:16px; color:var(--text); background:#fff; font-family:inherit; }
-    select:focus, input[type=password]:focus { outline:none; border-color:var(--green-light); }
-    .divider { border:none; border-top:1px solid var(--border); margin:16px 0; }
-    .pay-toggle { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
-    .pay-option { padding:14px 8px; text-align:center; font-size:14px; font-weight:600; cursor:pointer; color:var(--muted);
-                  transition:all .15s; user-select:none; border:1.5px solid var(--border); border-radius:10px; }
-    .pay-option:hover { background:#f0faf0; color:var(--green); }
-    .pay-option.active { border-color:var(--green); background:var(--green-bg); color:var(--green); }
-    .btn-submit { width:100%; padding:14px; background:var(--green); color:#fff; border:none; border-radius:12px;
-                  font-size:16px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; }
-    .btn-submit:disabled { background:#a0bfa8; cursor:not-allowed; }
-    .spinner { width:18px; height:18px; border:3px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%;
-               animation:spin .7s linear infinite; display:none; }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--green); color:#fff;
-             padding:12px 22px; border-radius:12px; font-size:14px; font-weight:600; box-shadow:0 4px 20px rgba(0,0,0,.18);
-             opacity:0; transition:opacity .3s; pointer-events:none; max-width:88vw; text-align:center; z-index:999; }
-    #toast.error { background:var(--red); } #toast.show { opacity:1; }
-    #success-screen { display:none; flex-direction:column; align-items:center; text-align:center; padding:32px 16px; }
-    #success-screen .big-icon { font-size:52px; }
-    #success-screen h2 { font-size:20px; font-weight:700; color:var(--green); margin:14px 0 6px; }
-    #success-screen p { font-size:14px; color:var(--muted); }
-    .invoice-badge { display:inline-block; background:var(--green-bg); border:1px solid var(--green-light); border-radius:8px;
-                     padding:7px 14px; font-size:12px; font-weight:700; color:var(--green); margin:14px 0; letter-spacing:.04em; }
-    .btn-another { margin-top:16px; padding:11px 26px; background:none; border:2px solid var(--green); color:var(--green);
-                   border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; }
-    .switchlink { text-align:center; margin-top:16px; font-size:13px; }
-    .switchlink a { color:var(--green); font-weight:700; }
-    @media (max-width:560px) {
-      body { padding:0; background:var(--card); }
-      header { margin:16px 0 14px; }
-      .card { max-width:100%; border:none; border-radius:0; box-shadow:none; padding:0 16px 40px; }
-      h1 { font-size:20px; } label { font-size:14px; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gotcha Matcha — Expense</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#2e4233; --forest-deep:#22332a; --clay:#c4704b;
+    --linen:#efe9dd; --linen-soft:#f7f3ea; --card:#ffffff;
+    --ink:#22332a; --muted:#7a8378; --mint:#dde8da; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Nunito',sans-serif;background:var(--linen);color:var(--ink);
+       padding-bottom:calc(96px + env(safe-area-inset-bottom));}
+  header{background:var(--forest);color:var(--linen-soft);padding:18px 20px 16px;
+         padding-top:calc(18px + env(safe-area-inset-top));position:sticky;top:0;z-index:20;}
+  header .hwrap{max-width:560px;margin:0 auto;}
+  header h1{font-weight:900;font-size:1.15rem;letter-spacing:.3px;}
+  header p{font-size:.78rem;opacity:.78;font-weight:700;margin-top:2px;}
+  main{max-width:560px;margin:0 auto;padding:16px;}
+
+  .section-label{font-weight:900;font-size:.8rem;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--forest);margin:22px 4px 8px;display:flex;align-items:center;gap:10px;}
+  .section-label::after{content:"";flex:1;height:2px;background:var(--forest);opacity:.18;border-radius:2px;}
+  .section-label .req{color:var(--clay);}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(34,51,42,.08);overflow:hidden;}
+  .field-row{padding:14px;border-bottom:1px solid #f0ece2;}
+  .field-row:last-child{border-bottom:none;}
+  label.lbl{font-weight:800;font-size:.85rem;display:block;margin-bottom:8px;}
+  label.lbl small{font-weight:700;color:var(--muted);}
+
+  input[type=text],input[type=password],select,textarea{
+    width:100%;padding:12px;border:2px solid #e3ddcf;border-radius:10px;
+    font-family:inherit;font-weight:700;font-size:1rem;background:var(--linen-soft);color:var(--ink);}
+  textarea{min-height:66px;resize:vertical;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--forest);background:#fff;}
+
+  /* pills (name / location / payment) */
+  .pill-group{display:flex;flex-wrap:wrap;gap:8px;}
+  .pill{padding:11px 16px;border:2px solid #e3ddcf;border-radius:99px;background:var(--linen-soft);
+        font-family:inherit;font-weight:800;font-size:.92rem;color:var(--muted);cursor:pointer;user-select:none;}
+  .pill.active,.pill.selected{background:var(--forest);border-color:var(--forest);color:#fff;}
+  .pay-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .pay-grid .pill{border-radius:12px;text-align:center;padding:14px 8px;}
+
+  /* upload */
+  .upload-zone{border:2px dashed var(--clay);border-radius:12px;padding:22px 16px;text-align:center;
+    position:relative;background:var(--linen-soft);cursor:pointer;}
+  .upload-zone input[type=file]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;}
+  .upload-zone .icon{font-size:30px;}
+  .upload-zone p{font-size:.85rem;color:var(--muted);font-weight:700;margin-top:6px;}
+  .upload-zone strong{color:var(--forest);}
+  #thumb-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .thumb-item{position:relative;width:70px;height:70px;flex-shrink:0;}
+  .thumb-item img{width:100%;height:100%;object-fit:cover;border-radius:10px;border:1px solid #e3ddcf;}
+  .thumb-item .remove-thumb{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;
+    background:var(--clay);color:#fff;border:none;font-size:12px;font-weight:900;cursor:pointer;line-height:20px;}
+  .thumb-item .status-badge{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:11px;font-weight:900;
+    background:rgba(34,51,42,.7);color:#fff;border-radius:0 0 9px 9px;}
+  .thumb-item .status-badge.ok{background:rgba(46,66,51,.85);}
+  .thumb-item .status-badge.err{background:rgba(163,64,44,.9);}
+  .clear-btn{background:none;border:none;color:var(--clay);font-family:inherit;font-weight:800;font-size:.82rem;
+    cursor:pointer;margin-top:10px;text-decoration:underline;}
+  .row2{display:flex;gap:10px;} .row2>*{flex:1;}
+
+  .config-warn{background:#fdf0e8;border:2px dashed var(--clay);border-radius:var(--radius);
+    padding:12px 14px;font-size:.82rem;font-weight:700;color:#8a4a2f;margin-top:14px;}
+  .note{font-size:.75rem;font-weight:700;color:var(--muted);margin:8px 4px 0;}
+
+  /* sticky action bar */
+  .actionbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--forest-deep);color:var(--linen-soft);
+    padding:12px 16px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(34,51,42,.25);}
+  .actionbar .inner{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .actionbar .count{font-size:.85rem;font-weight:800;opacity:.9;}
+  .actionbar button{background:var(--clay);color:#fff;border:none;border-radius:12px;padding:14px 26px;
+    font-family:inherit;font-weight:900;font-size:1rem;letter-spacing:.4px;cursor:pointer;
+    display:flex;align-items:center;gap:10px;}
+  .actionbar button:disabled{opacity:.45;}
+  .actionbar button:active{transform:scale(.97);}
+  .spinner{width:16px;height:16px;border:3px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;
+    animation:spin .7s linear infinite;display:none;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .toast{position:fixed;top:74px;left:50%;transform:translateX(-50%) translateY(-16px);background:var(--forest);color:#fff;
+    font-weight:800;font-size:.9rem;padding:12px 22px;border-radius:99px;opacity:0;pointer-events:none;
+    transition:all .25s ease;z-index:40;box-shadow:0 4px 14px rgba(0,0,0,.2);max-width:88vw;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);} .toast.error{background:#a3402c;}
+
+  #success-screen{display:none;text-align:center;padding:40px 20px;}
+  #success-screen .big{font-size:52px;}
+  #success-screen h2{font-weight:900;color:var(--forest);font-size:1.4rem;margin:12px 0 6px;}
+  #success-screen p{color:var(--muted);font-weight:700;font-size:.9rem;}
+  #success-screen .badge{display:inline-block;background:var(--mint);border-radius:99px;padding:8px 16px;
+    font-weight:900;color:var(--forest);margin:14px 0;font-size:.85rem;}
+  #success-screen .again{margin-top:14px;background:none;border:2px solid var(--forest);color:var(--forest);
+    border-radius:12px;padding:12px 28px;font-family:inherit;font-weight:900;font-size:1rem;cursor:pointer;}
+</style>
 </head>
 <body>
+<header><div class="hwrap">
+  <h1>Gotcha Matcha · Expenses</h1>
+  <p>Snap the receipt — it auto-reads and logs to the sheet</p>
+</div></header>
 
-<header>
-  <div class="logo">🍵</div>
-  <h1>Expense Submission</h1>
-  <p>Gotcha Matcha — founders online purchases</p>
-</header>
-
-<div class="card" id="form-card">
-
-  <!-- Access PIN -->
-  <div class="field">
-    <label>Access PIN <span class="req">*</span></label>
-    <input type="password" id="pin" placeholder="Enter PIN" autocomplete="off" oninput="onPin()">
+<main id="form-card">
+  <div id="configWarn" class="config-warn" style="display:none">
+    ⚠️ Web App URL not set — receipts won't save. Paste your <b>/exec</b> URL into <b>WEBAPP_URL</b> in this file.
   </div>
-  <hr class="divider" />
 
-  <!-- Screenshot -->
-  <div class="field">
-    <label>Screenshots <span class="req">*</span></label>
+  <div class="section-label">Receipt Photos <span class="req">*</span></div>
+  <div class="card"><div class="field-row">
     <div class="upload-zone" id="drop-zone">
-      <input type="file" id="file-input" accept="image/*" multiple />
+      <input type="file" id="file-input" accept="image/*" multiple>
       <div class="icon">📷</div>
-      <p>Tap to add screenshots<br><strong>Select multiple at once</strong></p>
+      <p>Tap to add photos<br><strong>You can select several at once</strong></p>
     </div>
     <div id="thumb-list"></div>
-    <div id="file-count" class="file-count" style="display:none"></div>
     <button class="clear-btn" id="clear-btn" type="button" style="display:none">Clear all</button>
-  </div>
+  </div></div>
 
-  <hr class="divider" />
-
-  <div class="field">
-    <label>Who's submitting? <span class="req">*</span></label>
-    <div class="chip-group" id="chip-name">
-      <div class="chip" data-val="Sulenni">Sulenni</div>
-      <div class="chip" data-val="Abrina">Abrina</div>
-      <div class="chip" data-val="Vincent">Vincent</div>
-      <div class="chip" data-val="Dayana">Dayana</div>
-      <div class="chip" data-val="__other__">Other…</div>
+  <div class="section-label">Who's Submitting <span class="req">*</span></div>
+  <div class="card"><div class="field-row">
+    <div class="pill-group" id="chip-name">
+      <div class="pill" data-val="Sulenni">Sulenni</div>
+      <div class="pill" data-val="Abrina">Abrina</div>
+      <div class="pill" data-val="Vincent">Vincent</div>
+      <div class="pill" data-val="Dayana">Dayana</div>
+      <div class="pill" data-val="__other__">Other…</div>
     </div>
-    <input type="text" id="name-other-input" placeholder="Type name"
-           style="display:none; margin-top:10px; width:100%; padding:12px; border:1.5px solid var(--border);
-                  border-radius:10px; font-size:16px; font-family:inherit; color:var(--text);" />
-  </div>
+    <input type="text" id="name-other-input" placeholder="Type name" style="display:none;margin-top:10px;">
+  </div></div>
 
-  <div class="field">
-    <label>Location <span class="req">*</span></label>
-    <div class="chip-group" id="chip-location">
-      <div class="chip" data-val="Woodleigh">Woodleigh</div>
-      <div class="chip" data-val="Events">Events</div>
+  <div class="section-label">Location <span class="req">*</span></div>
+  <div class="card"><div class="field-row">
+    <div class="pill-group" id="chip-location">
+      <div class="pill" data-val="Woodleigh">Woodleigh</div>
+      <div class="pill" data-val="Jurong Point">Jurong Point</div>
+      <div class="pill" data-val="Events">Events</div>
     </div>
-  </div>
+  </div></div>
 
-  <div class="field">
-    <label>Category <span class="req">*</span></label>
+  <div class="section-label">Category <span class="req">*</span></div>
+  <div class="card"><div class="field-row">
     <select id="sel-category">
       <option value="" disabled selected>Choose a category…</option>
       <option value="Ingredients">Ingredients</option>
       <option value="Inventory">Inventory</option>
       <option value="Packaging">Packaging</option>
-      <option value="Delivery Platform Fees">Delivery Platform Fees</option>
-      <option value="Rent/ Utilities">Rent/ Utilities</option>
-      <option value="Salaries/ CPF">Salaries/ CPF</option>
-      <option value="Marketing/ Branding/ Influencers">Marketing/ Branding/ Influencers</option>
       <option value="Delivery/ Logistics">Delivery/ Logistics</option>
       <option value="Repairs/ Maintanence">Repairs/ Maintanence</option>
-      <option value="Equipment Purchase (CAPEX)">Equipment Purchase (CAPEX)</option>
-      <option value="Software Subscriptions">Software Subscriptions</option>
-      <option value="Professional Fees (Legal/ Accounting)">Professional Fees (Legal/ Accounting)</option>
-      <option value="Bank Charges">Bank Charges</option>
-      <option value="Licenses/ Permits">Licenses/ Permits</option>
       <option value="Transport">Transport</option>
       <option value="Miscellaneous">Miscellaneous</option>
     </select>
-  </div>
+  </div></div>
 
-  <div class="field">
-    <label>Paid with</label>
-    <div class="pay-toggle">
-      <div class="pay-option active" data-val="Personal"     id="pay-personal">💳 Personal card</div>
-      <div class="pay-option"        data-val="Cash"         id="pay-cash">💵 Store cash</div>
-      <div class="pay-option"        data-val="Company Bank" id="pay-company">🏦 Company card</div>
-      <div class="pay-option"        data-val="Credit"       id="pay-credit">💜 Credit</div>
+  <div class="section-label">Paid With</div>
+  <div class="card"><div class="field-row">
+    <div class="pay-grid">
+      <div class="pill active" data-val="Personal"     id="pay-personal">💳 Personal</div>
+      <div class="pill"        data-val="Cash"         id="pay-cash">💵 Store cash</div>
+      <div class="pill"        data-val="Company Bank" id="pay-company">🏦 Company bank</div>
+      <div class="pill"        data-val="Petty cash"   id="pay-petty">🪙 Petty cash</div>
     </div>
-  </div>
+  </div></div>
 
-  <div class="field">
-    <label>Expense Month <span class="req">*</span></label>
-    <div style="display:flex; gap:10px;">
-      <select id="sel-month" style="flex:2;">
+  <div class="section-label">Expense Month <span class="req">*</span></div>
+  <div class="card"><div class="field-row">
+    <div class="row2">
+      <select id="sel-month">
         <option value="JAN">January</option><option value="FEB">February</option><option value="MAR">March</option>
         <option value="APR">April</option><option value="MAY">May</option><option value="JUN">June</option>
         <option value="JUL">July</option><option value="AUG">August</option><option value="SEP">September</option>
         <option value="OCT">October</option><option value="NOV">November</option><option value="DEC">December</option>
       </select>
-      <select id="sel-year" style="flex:1;">
+      <select id="sel-year">
         <option value="25">2025</option><option value="26">2026</option><option value="27">2027</option>
       </select>
     </div>
-  </div>
+  </div></div>
 
-  <div class="field">
-    <label style="font-weight:600;">Notes <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+  <div class="section-label">Notes <small style="font-weight:700;color:var(--muted);text-transform:none;letter-spacing:0;">(optional)</small></div>
+  <div class="card"><div class="field-row">
     <textarea id="notes" placeholder="e.g. for NYE event, shared with Woodleigh…"></textarea>
-  </div>
+  </div></div>
 
-  <button class="btn-submit" id="submit-btn" disabled>
-    <div class="spinner" id="spinner"></div>
-    <span id="btn-label">Submit</span>
-  </button>
-</div>
+  <p class="note">Screenshots are read one by one; the amount and vendor come straight off the image.</p>
+</main>
 
-<div class="card" id="success-screen">
-  <div class="big-icon">🎉</div>
+<div id="success-screen">
+  <div class="big">🎉</div>
   <h2>Done!</h2>
   <p>Added to the expense sheet.</p>
-  <div class="invoice-badge" id="success-invoice-id"></div>
-  <p style="font-size:12px;color:var(--muted);">SGD amount will be filled once FX rate is confirmed.</p>
-  <button class="btn-another" onclick="resetForm()">Submit Another</button>
+  <div class="badge" id="success-invoice-id"></div>
+  <p style="font-size:.78rem;">SGD amount fills in once the FX rate is confirmed.</p>
+  <button class="again" onclick="resetForm()">Submit another</button>
 </div>
 
-<div id="toast"></div>
+<div class="actionbar" id="actionbar"><div class="inner">
+  <div class="count" id="bar-count">No photos yet</div>
+  <button id="submit-btn" disabled>
+    <div class="spinner" id="spinner"></div><span id="btn-label">Submit</span>
+  </button>
+</div></div>
+
+<div class="toast" id="toast"></div>
 
 <script>
   // ====== PASTE YOUR DEPLOYED WEB APP URL HERE (ends in /exec) ======
@@ -215,40 +216,36 @@
   let selectedPayment = 'Personal';
   let selectedMonth = '', selectedYear = '';
 
-  function getPin(){ return (document.getElementById('pin').value || '').trim(); }
-  function onPin(){ try{ localStorage.setItem('gm_exp_pin', getPin()); }catch(e){} validate(); }
-
   function setupChips(groupId, onSelect) {
-    document.getElementById(groupId).querySelectorAll('.chip').forEach(chip => {
+    document.getElementById(groupId).querySelectorAll('.pill').forEach(chip => {
       chip.addEventListener('click', () => {
-        document.getElementById(groupId).querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        document.getElementById(groupId).querySelectorAll('.pill').forEach(c => c.classList.remove('active'));
         chip.classList.add('active'); onSelect(chip.dataset.val); validate();
       });
     });
   }
   setupChips('chip-name', function (v) {
-    var otherInput = document.getElementById('name-other-input');
-    if (v === '__other__') { otherInput.style.display='block'; otherInput.focus(); selectedName = otherInput.value.trim(); }
-    else { otherInput.style.display='none'; selectedName = v; }
+    var o = document.getElementById('name-other-input');
+    if (v === '__other__') { o.style.display='block'; o.focus(); selectedName = o.value.trim(); }
+    else { o.style.display='none'; selectedName = v; }
   });
   document.getElementById('name-other-input').addEventListener('input', function () { selectedName = this.value.trim(); validate(); });
   setupChips('chip-location', v => selectedLocation = v);
   document.getElementById('sel-category').addEventListener('change', function () { selectedCategory = this.value; validate(); });
 
-  var selMonth = document.getElementById('sel-month');
-  var selYear  = document.getElementById('sel-year');
+  var selMonth = document.getElementById('sel-month'), selYear = document.getElementById('sel-year');
   selMonth.addEventListener('change', function () { selectedMonth = this.value; validate(); });
   selYear.addEventListener('change',  function () { selectedYear  = this.value; validate(); });
-  (function initMonthYear() {
-    var MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  (function () {
+    var M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     var now = new Date();
-    selectedMonth = MONTHS[now.getMonth()]; selectedYear = String(now.getFullYear()).slice(-2);
+    selectedMonth = M[now.getMonth()]; selectedYear = String(now.getFullYear()).slice(-2);
     selMonth.value = selectedMonth; selYear.value = selectedYear;
   })();
 
   const payOpts = [
     { id:'pay-personal', val:'Personal' }, { id:'pay-cash', val:'Cash' },
-    { id:'pay-company', val:'Company Bank' }, { id:'pay-credit', val:'Credit' }
+    { id:'pay-company', val:'Company Bank' }, { id:'pay-petty', val:'Petty cash' }
   ];
   payOpts.forEach(opt => {
     document.getElementById(opt.id).addEventListener('click', () => {
@@ -259,7 +256,6 @@
 
   const fileInput = document.getElementById('file-input');
   const thumbList = document.getElementById('thumb-list');
-  const fileCount = document.getElementById('file-count');
   const clearBtn  = document.getElementById('clear-btn');
   fileInput.addEventListener('change', e => addFiles(e.target.files));
   document.getElementById('drop-zone').addEventListener('dragover', e => e.preventDefault());
@@ -284,10 +280,8 @@
       rm.onclick = () => { fileQueue.splice(idx,1); renderThumbs(); validate(); };
       wrap.appendChild(img); wrap.appendChild(rm); thumbList.appendChild(wrap);
     });
-    const n = fileQueue.length;
-    fileCount.style.display = n ? 'block' : 'none';
-    fileCount.textContent = n + ' screenshot' + (n!==1?'s':'') + ' selected';
-    clearBtn.style.display = n ? 'block' : 'none';
+    clearBtn.style.display = fileQueue.length ? 'inline' : 'none';
+    updateBar();
   }
   function setThumbStatus(idx, status) {
     const wrap = document.getElementById('thumb-'+idx); if (!wrap) return;
@@ -298,9 +292,13 @@
     if (status==='error'){ badge.className='status-badge err'; badge.textContent='✗'; }
   }
 
+  function updateBar(){
+    var n = fileQueue.length;
+    document.getElementById('bar-count').textContent = n ? (n + ' photo' + (n>1?'s':'') + ' ready') : 'No photos yet';
+  }
   function validate() {
     document.getElementById('submit-btn').disabled =
-      !(getPin() && fileQueue.length && selectedName && selectedLocation && selectedCategory && selectedMonth && selectedYear);
+      !(fileQueue.length && selectedName && selectedLocation && selectedCategory && selectedMonth && selectedYear);
   }
 
   document.getElementById('submit-btn').addEventListener('click', async () => {
@@ -311,7 +309,7 @@
 
     for (let i = 0; i < fileQueue.length; i++) {
       setThumbStatus(i, 'loading');
-      document.getElementById('btn-label').textContent = 'Submitting ' + (i+1) + ' of ' + total + '…';
+      document.getElementById('btn-label').textContent = (i+1) + '/' + total + '…';
       const item = fileQueue[i];
       const payload = {
         imageBase64:item.base64, mimeType:item.mime, staffName:selectedName, location:selectedLocation,
@@ -322,54 +320,55 @@
         const result = await callServer(payload);
         if (result.success) {
           setThumbStatus(i, 'ok'); done++;
-          if (result.ocrWarning) showToast('File '+(i+1)+': '+result.ocrWarning, true);
-          else if (result.driveWarning) showToast('File '+(i+1)+' saved but screenshot not uploaded: '+result.driveWarning, true);
-        } else { setThumbStatus(i,'error'); showToast('File '+(i+1)+': '+result.message, true); }
-      } catch(e) { setThumbStatus(i,'error'); showToast('File '+(i+1)+' failed: '+(e.message||'network error'), true); }
+          if (result.ocrWarning) showToast('Photo '+(i+1)+': '+result.ocrWarning, true);
+          else if (result.driveWarning) showToast('Photo '+(i+1)+' saved (screenshot not uploaded)', true);
+        } else { setThumbStatus(i,'error'); showToast('Photo '+(i+1)+': '+result.message, true); }
+      } catch(e) { setThumbStatus(i,'error'); showToast('Photo '+(i+1)+' failed: '+(e.message||'network error'), true); }
     }
 
     document.getElementById('spinner').style.display = 'none';
     document.getElementById('btn-label').textContent = 'Submit';
     document.getElementById('submit-btn').disabled = false;
     if (done > 0) {
-      document.getElementById('success-invoice-id').textContent = done+' of '+total+' expense'+(total>1?'s':'')+' added to sheet.';
-      setTimeout(() => { document.getElementById('form-card').style.display='none'; document.getElementById('success-screen').style.display='flex'; }, 800);
+      document.getElementById('success-invoice-id').textContent = done+' of '+total+' receipt'+(total>1?'s':'')+' added';
+      setTimeout(() => {
+        document.getElementById('form-card').style.display='none';
+        document.getElementById('actionbar').style.display='none';
+        document.getElementById('success-screen').style.display='block';
+      }, 700);
     }
   });
 
-  // ---- talk to the Apps Script API over fetch (no more google.script.run) ----
   function callServer(payload) {
     payload.action = 'ocr';
-    payload.pin = getPin();
-    return fetch(WEBAPP_URL, {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload)
-    }).then(function(r){ return r.json(); });
+    return fetch(WEBAPP_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(payload) })
+      .then(function(r){ return r.json(); });
   }
 
   function showToast(msg, isError) {
-    const t = document.getElementById('toast'); t.textContent = msg; t.className = 'show'+(isError?' error':'');
-    clearTimeout(t._timer); t._timer = setTimeout(() => t.className='', 5000);
+    const t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast show'+(isError?' error':'');
+    clearTimeout(t._timer); t._timer = setTimeout(() => t.className='toast', 3000);
   }
 
   function resetForm() {
     fileQueue = []; renderThumbs();
     selectedName=''; selectedLocation=''; selectedCategory=''; selectedPayment='Personal';
     document.getElementById('notes').value='';
-    var otherInput = document.getElementById('name-other-input'); otherInput.style.display='none'; otherInput.value='';
+    var o = document.getElementById('name-other-input'); o.style.display='none'; o.value='';
     document.getElementById('sel-category').value='';
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    payOpts.forEach(o => document.getElementById(o.id).classList.remove('active'));
+    document.querySelectorAll('.pill').forEach(c => c.classList.remove('active'));
     document.getElementById('pay-personal').classList.add('active');
     document.getElementById('form-card').style.display='block';
+    document.getElementById('actionbar').style.display='block';
     document.getElementById('success-screen').style.display='none';
-    var MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    var M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     var now = new Date();
-    selectedMonth = MONTHS[now.getMonth()]; selectedYear = String(now.getFullYear()).slice(-2);
+    selectedMonth = M[now.getMonth()]; selectedYear = String(now.getFullYear()).slice(-2);
     document.getElementById('sel-month').value = selectedMonth; document.getElementById('sel-year').value = selectedYear;
     validate();
   }
 
-  try { document.getElementById('pin').value = localStorage.getItem('gm_exp_pin') || ''; } catch(e){}
+  if (WEBAPP_URL === 'PASTE_WEB_APP_URL_HERE') document.getElementById('configWarn').style.display='block';
   validate();
 </script>
 </body>
