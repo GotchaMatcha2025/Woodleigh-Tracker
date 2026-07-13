@@ -105,8 +105,7 @@
   .orow .info{flex:1;min-width:0}
   .orow .name{font-size:16px;font-weight:700}
   .orow .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
-  .orow .qty{font-size:18px;font-weight:800;color:var(--accent);white-space:nowrap;text-align:right}
-  .orow .qty small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+  .orow .qty{font-size:15px;font-weight:800;color:var(--accent);white-space:nowrap;text-align:right}
   .bigok{padding:40px 0;text-align:center;color:var(--accent);font-weight:600}
   .dailynote{margin-top:20px;font-size:12.5px;color:var(--muted)}
 
@@ -376,17 +375,7 @@
   function renderLevels(s){
     document.getElementById('levels-last').innerHTML =
       fmtLast(s.lastDaily,'Daily') + '<br>' + fmtLast(s.lastWeekly,'Weekly');
-    // summary
-    var low = s.items.filter(function(i){ return i.freq==='Daily' && (i.status==='LOW'||i.status==='OUT'); });
-    var ord = s.items.filter(function(i){ return i.freq==='Weekly' && i.orderBuy>=1; });
-    var sm='<div class="summary"><div class="sh">Needs attention</div>';
-    if(!low.length && !ord.length){ sm+='<div class="ok">✅ Nothing low right now.</div></div>'; }
-    else {
-      low.forEach(function(i){ sm+='<div class="srow"><span>🔴 '+esc(i.item)+'</span><span class="qty">'+(i.runway==null?'':i.runway+'d left')+'</span></div>'; });
-      ord.forEach(function(i){ sm+='<div class="srow"><span>📦 '+esc(i.item)+'</span><span class="qty">order '+i.orderBuy+' '+esc(i.buyUnit)+'</span></div>'; });
-      sm+='</div>';
-    }
-    document.getElementById('summary').innerHTML=sm;
+    document.getElementById('summary').innerHTML='';
     // full list sorted by lowest cover first
     var html='';
     sortByLow(s.items).forEach(function(i){
@@ -405,26 +394,30 @@
     document.getElementById('list').innerHTML=html;
   }
 
+  function byRunway(a,b){ var ra=(a.runway==null?1e9:a.runway), rb=(b.runway==null?1e9:b.runway); return ra-rb; }
+  function orderRow(i, action, cls){
+    var run=(i.runway==null?'':i.runway+' days left');
+    return '<div class="orow"><div class="info">'+
+        '<div class="name">'+esc(i.item)+'</div>'+
+        '<div class="sub">have '+(i.level==null?'—':i.level+' '+esc(i.countUnit))+(run?(' · '+run):'')+'</div>'+
+      '</div><div class="qty"'+(cls?(' style="color:'+cls+'"'):'')+'>'+action+'</div></div>';
+  }
   function renderOrder(s){
     document.getElementById('order-last').innerHTML = fmtLast(s.lastWeekly,'Weekly');
-    var ord = s.items.filter(function(i){ return i.freq==='Weekly' && i.orderBuy>=1; })
-      .sort(function(a,b){ var ra=(a.runway==null?1e9:a.runway), rb=(b.runway==null?1e9:b.runway); return ra-rb; });
-    var html='';
-    if(!ord.length){ html='<div class="bigok">✅ Nothing to order this week.</div>'; }
-    else {
-      ord.forEach(function(i){
-        var run=(i.runway==null?'':i.runway+' days left');
-        html+='<div class="orow"><div class="info">'+
-            '<div class="name">'+esc(i.item)+'</div>'+
-            '<div class="sub">have '+(i.level==null?'—':i.level+' '+esc(i.countUnit))+(run?(' · '+run):'')+'</div>'+
-          '</div><div class="qty">'+i.orderBuy+'<small>'+esc(i.buyUnit)+'</small></div></div>';
-      });
+    var ord = s.items.filter(function(i){ return i.freq==='Weekly' && i.orderBuy>=1; }).sort(byRunway);
+    var lowDaily = s.items.filter(function(i){ return i.freq==='Daily' && (i.status==='LOW'||i.status==='OUT'); }).sort(byRunway);
+    if(!ord.length && !lowDaily.length){
+      document.getElementById('orderlist').innerHTML='<div class="bigok">✅ Nothing to order or restock right now.</div>';
+      return;
     }
-    // small daily-restock note (from warehouse, not ordered)
-    var lowDaily = s.items.filter(function(i){ return i.freq==='Daily' && (i.status==='LOW'||i.status==='OUT'); });
+    var html='';
+    if(ord.length){
+      html+='<div class="cat">To order (weekly)</div>';
+      ord.forEach(function(i){ html+=orderRow(i, 'order '+i.orderBuy+' '+esc(i.buyUnit), ''); });
+    }
     if(lowDaily.length){
-      html+='<div class="dailynote">🔴 Daily items to restock from the warehouse: '+
-        lowDaily.map(function(i){ return esc(i.item)+(i.runway==null?'':' ('+i.runway+'d)'); }).join(', ')+'.</div>';
+      html+='<div class="cat" style="margin-top:22px">Restock from warehouse (daily)</div>';
+      lowDaily.forEach(function(i){ html+=orderRow(i, 'restock', 'var(--red)'); });
     }
     document.getElementById('orderlist').innerHTML=html;
   }
