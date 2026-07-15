@@ -108,6 +108,27 @@
   .orow .qty .opt .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-right:6px}
   .bigok{padding:40px 0;text-align:center;color:var(--accent);font-weight:600}
 
+  /* perishables (milk & whip) */
+  .pcard{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
+  .pcard .ptop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .pcard .pname{font-size:16px;font-weight:700}
+  .pcard .psched{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+  .pcard .phave{text-align:right;white-space:nowrap}
+  .pcard .phave .big{font-size:18px;font-weight:800}
+  .pcard .phave .u{font-size:11px;color:var(--muted)}
+  .prow2{display:flex;align-items:center;gap:12px;margin-top:10px}
+  .spark rect{fill:var(--accent)}
+  .tr{font-size:12px;font-weight:700}
+  .tr.up{color:var(--amber)} .tr.down{color:var(--accent)} .tr.flat{color:var(--muted)}
+  .puse{font-size:12px;color:var(--muted);margin-left:auto}
+  .pdays{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
+  .pd{flex:1;min-width:64px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px}
+  .pd .d{font-size:11px;color:var(--muted);font-weight:700}
+  .pd .n{font-size:17px;font-weight:800;color:var(--accent)}
+  .pd .u{font-size:10px;color:var(--muted)}
+  .pd.today{border-color:var(--accent);background:var(--accent-soft)}
+  .pcap{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.45}
+
   #toast{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
          background:var(--ink);color:#fff;padding:12px 20px;border-radius:11px;font-weight:600;font-size:14px;
          opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;max-width:88vw;text-align:center}
@@ -126,6 +147,7 @@
   <div class="tabs2">
     <button id="tab-levels" onclick="switchView('levels')">📊 Levels</button>
     <button id="tab-order"  onclick="switchView('order')">📦 Order</button>
+    <button id="tab-perish" onclick="switchView('perish')">🥛 Milk &amp; Whip</button>
   </div>
 </header>
 
@@ -157,6 +179,12 @@
 <main class="wrap view" id="view-order">
   <div class="lastcount" id="order-last"></div>
   <div id="orderlist"><div class="loading">Loading…</div></div>
+</main>
+
+<!-- ===================== MILK & WHIP ===================== -->
+<main class="wrap view" id="view-perish">
+  <div class="lastcount" id="perish-last"></div>
+  <div id="perishlist"><div class="loading">Loading…</div></div>
 </main>
 
 <!-- ===================== DELIVERY ===================== -->
@@ -200,14 +228,14 @@
   function switchView(v){
     VIEW=v;
     document.body.classList.toggle('entry-mode', isEntry(v));
-    ['count','levels','order','delivery'].forEach(function(x){
+    ['count','levels','order','delivery','perish'].forEach(function(x){
       document.getElementById('tab-'+x).classList.toggle('on', x===v);
       document.getElementById('view-'+x).classList.toggle('on', x===v);
     });
     document.getElementById('title').textContent =
-      v==='count'?'Stock Count':v==='levels'?'Stock Levels':v==='order'?'Weekly Order':'Log Delivery';
+      v==='count'?'Stock Count':v==='levels'?'Stock Levels':v==='order'?'Weekly Order':v==='perish'?'Milk & Whip':'Log Delivery';
     document.getElementById('saveBtn').classList.toggle('deliv', v==='delivery');
-    if(isEntry(v)) loadEntry(); else loadLevels();
+    if(isEntry(v)) loadEntry(); else if(v==='perish') loadPerishables(); else loadLevels();
   }
   function setFreq(f){
     if(f===FREQ) return;
@@ -229,7 +257,7 @@
     if(o===OUTLET) return;
     OUTLET=o; OVERRIDE={Daily:false, Weekly:false};
     try{ localStorage.setItem('gm_outlet', o); }catch(e){}
-    if(isEntry(VIEW)) loadEntry(); else loadLevels();
+    if(isEntry(VIEW)) loadEntry(); else if(VIEW==='perish') loadPerishables(); else loadLevels();
   }
 
   // ==================== ENTRY (count + delivery share one fetch) ====================
@@ -466,8 +494,8 @@
   }
   function renderOrder(s){
     document.getElementById('order-last').innerHTML = fmtLast(s.lastDaily,'Daily') + '<br>' + fmtLast(s.lastWeekly,'Weekly');
-    // only items actually running low (below their reorder point) — not everything below target
-    var need = s.items.filter(function(i){ return i.status==='LOW' || i.status==='OUT'; });
+    // only items actually running low — and NOT milk/whip (those have their own tab)
+    var need = s.items.filter(function(i){ return (i.status==='LOW'||i.status==='OUT') && i.category!=='Milk & Whip'; });
     if(!need.length){
       document.getElementById('orderlist').innerHTML='<div class="bigok">✅ Nothing to order right now.</div>'; return;
     }
@@ -482,6 +510,55 @@
       groups[sup].sort(byRunway).forEach(function(i){ html+=orderRow(i); });
     });
     document.getElementById('orderlist').innerHTML=html;
+  }
+
+  // ==================== MILK & WHIP ====================
+  function loadPerishables(){
+    var url = WEBAPP_URL + '?view=perishables' + (OUTLET?('&outlet='+encodeURIComponent(OUTLET)):'');
+    document.getElementById('perishlist').innerHTML='<div class="loading">Loading…</div>';
+    fetch(url).then(function(r){return r.json();}).then(function(s){
+      if(!s.ok) throw new Error(s.error||'load failed');
+      if(s.outlet) OUTLET=s.outlet;
+      renderOutlets(outletsList(s), OUTLET);
+      document.getElementById('sub').textContent='As of '+s.generatedAt+' · today is '+s.todayName;
+      document.getElementById('perish-last').innerHTML = fmtLast(s.lastDaily,'Daily');
+      renderPerishables(s);
+    }).catch(function(e){ document.getElementById('perishlist').innerHTML='<div class="loading">Could not load.<br><small>'+e.message+'</small></div>'; });
+  }
+  function sparkline(rec){
+    if(!rec||!rec.length) return '<span style="font-size:11.5px;color:var(--muted)">no trend yet</span>';
+    var max=Math.max.apply(null, rec.concat([0.001])), w=6, g=3, h=24, bars='';
+    rec.forEach(function(v,i){ var bh=Math.max(1,Math.round((v/max)*h)); bars+='<rect x="'+(i*(w+g))+'" y="'+(h-bh)+'" width="'+w+'" height="'+bh+'" rx="1"></rect>'; });
+    return '<svg class="spark" viewBox="0 0 '+(rec.length*(w+g))+' '+h+'" width="'+(rec.length*(w+g))+'" height="'+h+'">'+bars+'</svg>';
+  }
+  function trendIcon(t){
+    if(t==='up')   return '<span class="tr up">▲ using more</span>';
+    if(t==='down') return '<span class="tr down">▼ using less</span>';
+    return '<span class="tr flat">▬ steady</span>';
+  }
+  function renderPerishables(s){
+    if(!s.items||!s.items.length){ document.getElementById('perishlist').innerHTML='<div class="bigok">No milk / whip items.</div>'; return; }
+    var html='';
+    s.items.forEach(function(i){
+      var big=(i.onHand==null?'—':i.onHand), run=(i.runway==null?'':i.runway+'d left');
+      html+='<div class="pcard">'+
+        '<div class="ptop"><div><div class="pname">'+esc(i.item)+'</div>'+
+          (i.schedule?'<div class="psched">'+esc(i.schedule)+'</div>':'')+'</div>'+
+          '<div class="phave"><div class="big">'+big+'</div><div class="u">'+esc(i.countUnit)+(run?(' · '+run):'')+'</div></div>'+
+        '</div>'+
+        '<div class="prow2">'+sparkline(i.recent)+trendIcon(i.trend)+'<span class="puse">~'+i.usedDaily+'/day</span></div>';
+      if(i.perDay){
+        html+='<div class="pdays">'+i.perDay.map(function(d){
+          return '<div class="pd'+(d.today?' today':'')+'"><div class="d">'+d.name+'</div><div class="n">'+d.upTo+'</div><div class="u">'+esc(i.countUnit)+'</div></div>';
+        }).join('')+'</div>'+
+        '<div class="pcap">On each delivery day, top the fridge up to that many '+esc(i.countUnit)+'s'+
+          (i.ceiling!=null?(' (cap '+i.ceiling+')'):'')+'. Today is highlighted.</div>';
+      } else {
+        html+='<div class="pcap">Top up: '+(i.orderBuy>=1?('order '+i.orderBuy+' '+esc(i.buyUnit)):'nothing needed right now')+'.</div>';
+      }
+      html+='</div>';
+    });
+    document.getElementById('perishlist').innerHTML=html;
   }
 
   function toast(m,err){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='';},4000);}
