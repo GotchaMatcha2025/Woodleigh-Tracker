@@ -460,21 +460,27 @@
       '</div><div class="qty"'+(cls?(' style="color:'+cls+'"'):'')+'>'+action+'</div></div>';
   }
   function renderOrder(s){
-    document.getElementById('order-last').innerHTML = fmtLast(s.lastWeekly,'Weekly');
-    var ord = s.items.filter(function(i){ return i.freq==='Weekly' && i.orderBuy>=1; }).sort(byRunway);
-    var lowDaily = s.items.filter(function(i){ return i.freq==='Daily' && (i.status==='LOW'||i.status==='OUT'); }).sort(byRunway);
-    if(!ord.length && !lowDaily.length){
-      document.getElementById('orderlist').innerHTML='<div class="bigok">✅ Nothing to order or restock right now.</div>'; return;
+    document.getElementById('order-last').innerHTML = fmtLast(s.lastDaily,'Daily') + '<br>' + fmtLast(s.lastWeekly,'Weekly');
+    // anything that needs ordering: weekly items to top up + low daily items
+    var need = s.items.filter(function(i){
+      return (i.freq==='Weekly' && i.orderBuy>=1) || (i.freq==='Daily' && (i.status==='LOW'||i.status==='OUT'));
+    });
+    if(!need.length){
+      document.getElementById('orderlist').innerHTML='<div class="bigok">✅ Nothing to order right now.</div>'; return;
     }
+    // group by supplier
+    var groups={};
+    need.forEach(function(i){ var sup=(i.supplier||'').trim()||'__none__'; (groups[sup]=groups[sup]||[]).push(i); });
+    var names=Object.keys(groups).filter(function(k){return k!=='__none__';}).sort();
+    if(groups['__none__']) names.push('__none__');   // ungrouped (syrups, crumbs…) at the bottom
     var html='';
-    if(ord.length){
-      html+='<div class="cat">To order (weekly)</div>';
-      ord.forEach(function(i){ html+=orderRow(i, 'order '+i.orderBuy+' '+esc(i.buyUnit), ''); });
-    }
-    if(lowDaily.length){
-      html+='<div class="cat" style="margin-top:22px">Restock from warehouse (daily)</div>';
-      lowDaily.forEach(function(i){ html+=orderRow(i, 'restock', 'var(--red)'); });
-    }
+    names.forEach(function(sup){
+      html+='<div class="cat">'+(sup==='__none__'?'No supplier set':esc(sup))+'</div>';
+      groups[sup].sort(byRunway).forEach(function(i){
+        var action=(i.orderBuy>=1)?('order '+i.orderBuy+' '+esc(i.buyUnit)):'restock';
+        html+=orderRow(i, action, (i.orderBuy>=1?'':'var(--red)'));
+      });
+    });
     document.getElementById('orderlist').innerHTML=html;
   }
 
