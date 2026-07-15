@@ -103,7 +103,9 @@
   .orow .info{flex:1;min-width:0}
   .orow .name{font-size:16px;font-weight:700}
   .orow .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
-  .orow .qty{font-size:15px;font-weight:800;color:var(--accent);white-space:nowrap;text-align:right}
+  .orow .qty{text-align:right;white-space:nowrap}
+  .orow .qty .opt{font-size:15px;font-weight:800;color:var(--accent);line-height:1.4}
+  .orow .qty .opt .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-right:6px}
   .bigok{padding:40px 0;text-align:center;color:var(--accent);font-weight:600}
 
   #toast{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
@@ -452,12 +454,15 @@
   }
 
   function byRunway(a,b){ var ra=(a.runway==null?1e9:a.runway), rb=(b.runway==null?1e9:b.runway); return ra-rb; }
-  function orderRow(i, action, cls){
+  function orderRow(i){
     var run=(i.runway==null?'':i.runway+' days left');
+    var w1=i.order1w||0, w2=i.order2w||0;
+    var qty='<div class="opt"><span class="lbl">1 wk</span>'+w1+' '+esc(i.buyUnit)+'</div>'+
+            '<div class="opt"><span class="lbl">2 wk</span>'+w2+' '+esc(i.buyUnit)+'</div>';
     return '<div class="orow"><div class="info">'+
         '<div class="name">'+esc(i.item)+'</div>'+
         '<div class="sub">have '+(shown(i)==='—'?'—':(shown(i)+' '+esc(i.countUnit)))+(run?(' · '+run):'')+'</div>'+
-      '</div><div class="qty"'+(cls?(' style="color:'+cls+'"'):'')+'>'+action+'</div></div>';
+      '</div><div class="qty">'+qty+'</div></div>';
   }
   function renderOrder(s){
     document.getElementById('order-last').innerHTML = fmtLast(s.lastDaily,'Daily') + '<br>' + fmtLast(s.lastWeekly,'Weekly');
@@ -474,10 +479,7 @@
     var html='';
     names.forEach(function(sup){
       html+='<div class="cat">'+(sup==='__none__'?'No supplier set':esc(sup))+'</div>';
-      groups[sup].sort(byRunway).forEach(function(i){
-        var action=(i.orderBuy>=1)?('order '+i.orderBuy+' '+esc(i.buyUnit)):'restock';
-        html+=orderRow(i, action, (i.orderBuy>=1?'':'var(--red)'));
-      });
+      groups[sup].sort(byRunway).forEach(function(i){ html+=orderRow(i); });
     });
     document.getElementById('orderlist').innerHTML=html;
   }
