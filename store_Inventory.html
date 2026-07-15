@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Gotcha Matcha — Stock</title>
+<title>Gotcha Matcha — Stock Count</title>
 <style>
   :root{
     --ink:#1c1c1a; --muted:#8a8f88; --line:#eceae4;
@@ -13,21 +13,19 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:var(--ink);
-       background:var(--bg);font-size:16px;line-height:1.4}
-  body.entry-mode{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+       background:var(--bg);font-size:16px;line-height:1.4;padding-bottom:calc(88px + env(safe-area-inset-bottom))}
   .wrap{max-width:640px;margin:0 auto;padding:0 20px}
 
   header{padding:22px 20px 0;padding-top:calc(20px + env(safe-area-inset-top));max-width:640px;margin:0 auto}
+  header .row1{display:flex;justify-content:space-between;align-items:center;gap:12px}
   header h1{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  header .portal{font-size:13px;color:#fff;background:var(--accent);text-decoration:none;font-weight:700;
+                 padding:8px 14px;border-radius:10px;white-space:nowrap}
   header .sub{font-size:13px;color:var(--muted);margin-top:2px}
   .tabs{display:flex;gap:8px;margin:16px 0 0}
   .tabs button{flex:1;padding:13px 4px;border:1px solid var(--line);background:#fff;border-radius:11px;
                font-family:inherit;font-size:15px;font-weight:700;color:var(--muted)}
   .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-  .tabs2{display:flex;gap:6px;margin:8px 0 0}
-  .tabs2 button{flex:1;padding:8px 4px;border:1px solid var(--line);background:#fff;border-radius:9px;
-                font-family:inherit;font-size:12.5px;font-weight:600;color:var(--muted)}
-  .tabs2 button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 
   .seg{display:flex;gap:6px;margin:14px auto 0;max-width:640px;background:#f4f3ef;padding:4px;border-radius:12px}
   .seg button{flex:1;padding:10px;border:none;background:transparent;border-radius:9px;font-family:inherit;
@@ -78,56 +76,12 @@
 
   .footer{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);
           backdrop-filter:saturate(180%) blur(8px);border-top:1px solid var(--line);
-          padding:12px 20px calc(12px + env(safe-area-inset-bottom));display:none}
-  body.entry-mode .footer{display:block}
+          padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
   .footer .finner{max-width:640px;margin:0 auto;display:flex;gap:14px;align-items:center}
   .footer .count{flex:1;font-size:14px;color:var(--muted);font-weight:600}
   .footer button{padding:14px 26px;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:inherit}
   #saveBtn{background:var(--accent)} #saveBtn.deliv{background:var(--clay)}
   .footer button:disabled{background:#c3d6cb}
-
-  .lrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
-  .lrow.low{background:linear-gradient(90deg,var(--red-soft),transparent 60%)}
-  .lrow .info{flex:1;min-width:0}
-  .lrow .name{font-size:15.5px;font-weight:600}
-  .lrow .meta{font-size:12px;color:var(--muted);margin-top:2px}
-  .lrow .meta .recv{color:var(--clay);font-weight:700}
-  .lrow .lvl{text-align:right;white-space:nowrap}
-  .lrow .lvl .big{font-size:17px;font-weight:700}
-  .lrow .lvl .u{font-size:12px;color:var(--muted)}
-  .pill{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;margin-top:4px}
-  .pill.LOW{background:var(--red-soft);color:var(--red)} .pill.OUT{background:var(--red);color:#fff}
-  .pill.OK{background:var(--accent-soft);color:var(--accent)}
-
-  .orow{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
-  .orow .info{flex:1;min-width:0}
-  .orow .name{font-size:16px;font-weight:700}
-  .orow .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
-  .orow .qty{text-align:right;white-space:nowrap}
-  .orow .qty .opt{font-size:15px;font-weight:800;color:var(--accent);line-height:1.4}
-  .orow .qty .opt .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-right:6px}
-  .bigok{padding:40px 0;text-align:center;color:var(--accent);font-weight:600}
-
-  /* perishables (milk & whip) */
-  .pcard{border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:14px}
-  .pcard .ptop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .pcard .pname{font-size:16px;font-weight:700}
-  .pcard .psched{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
-  .pcard .phave{text-align:right;white-space:nowrap}
-  .pcard .phave .big{font-size:18px;font-weight:800}
-  .pcard .phave .u{font-size:11px;color:var(--muted)}
-  .prow2{display:flex;align-items:center;gap:12px;margin-top:10px}
-  .spark rect{fill:var(--accent)}
-  .tr{font-size:12px;font-weight:700}
-  .tr.up{color:var(--amber)} .tr.down{color:var(--accent)} .tr.flat{color:var(--muted)}
-  .puse{font-size:12px;color:var(--muted);margin-left:auto}
-  .pdays{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}
-  .pd{flex:1;min-width:64px;text-align:center;border:1px solid var(--line);border-radius:10px;padding:8px 4px}
-  .pd .d{font-size:11px;color:var(--muted);font-weight:700}
-  .pd .n{font-size:17px;font-weight:800;color:var(--accent)}
-  .pd .u{font-size:10px;color:var(--muted)}
-  .pd.today{border-color:var(--accent);background:var(--accent-soft)}
-  .pcap{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.45}
 
   #toast{position:fixed;bottom:calc(96px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
          background:var(--ink);color:#fff;padding:12px 20px;border-radius:11px;font-weight:600;font-size:14px;
@@ -136,18 +90,16 @@
   .loading{padding:48px 0;text-align:center;color:var(--muted)}
 </style>
 </head>
-<body class="entry-mode">
+<body>
 <header>
-  <h1 id="title">Stock Count</h1>
+  <div class="row1">
+    <h1 id="title">Stock Count</h1>
+    <a class="portal" id="portal" href="store_manager.html">📊 Manager view →</a>
+  </div>
   <div class="sub" id="sub">Loading…</div>
   <div class="tabs">
     <button id="tab-count"    class="on" onclick="switchView('count')">📝 Count</button>
     <button id="tab-delivery" onclick="switchView('delivery')">📥 Delivery</button>
-  </div>
-  <div class="tabs2">
-    <button id="tab-levels" onclick="switchView('levels')">📊 Levels</button>
-    <button id="tab-order"  onclick="switchView('order')">📦 Order</button>
-    <button id="tab-perish" onclick="switchView('perish')">🥛 Milk &amp; Whip</button>
   </div>
 </header>
 
@@ -167,24 +119,6 @@
   <div class="hint">📋 Count <b>sealed / unopened</b> stock only. If a delivery came in after you counted, log it on the <b>Delivery</b> tab. Progress saves automatically.</div>
   <div id="banner" class="banner hidden"></div>
   <div id="form"><div id="countList"><div class="loading">Loading items…</div></div></div>
-</main>
-
-<!-- ===================== LEVELS ===================== -->
-<main class="wrap view" id="view-levels">
-  <div class="lastcount" id="levels-last"></div>
-  <div id="list"><div class="loading">Loading…</div></div>
-</main>
-
-<!-- ===================== ORDER ===================== -->
-<main class="wrap view" id="view-order">
-  <div class="lastcount" id="order-last"></div>
-  <div id="orderlist"><div class="loading">Loading…</div></div>
-</main>
-
-<!-- ===================== MILK & WHIP ===================== -->
-<main class="wrap view" id="view-perish">
-  <div class="lastcount" id="perish-last"></div>
-  <div id="perishlist"><div class="loading">Loading…</div></div>
 </main>
 
 <!-- ===================== DELIVERY ===================== -->
@@ -209,14 +143,13 @@
   var FALLBACK_OUTLETS = ['Woodleigh','Jurong Point'];   // keep in sync with CFG.OUTLETS
   function outletsList(s){ return (s && s.outlets && s.outlets.length>=2) ? s.outlets : FALLBACK_OUTLETS; }
 
-  var VIEW='count', FREQ='Daily', STATE=null, LEVELS=null, OUTLET=null;
+  var VIEW='count', FREQ='Daily', STATE=null, OUTLET=null;
   var OVERRIDE={Daily:false, Weekly:false};
 
   function val(id){ return (document.getElementById(id).value||'').trim(); }
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function escA(s){ return String(s).replace(/"/g,'&quot;'); }
   function savedOutlet(){ try{ return localStorage.getItem('gm_outlet'); }catch(e){ return null; } }
-  function isEntry(v){ return v==='count' || v==='delivery'; }
 
   function fmtLast(info, label){
     if(!info || !info.counted) return '<span class="never">'+label+' — not counted yet.</span>';
@@ -224,18 +157,17 @@
     return label+' last counted: <b>'+when+'</b>'+(info.by?(' by '+esc(info.by)):'')+' ('+info.n+' item'+(info.n===1?'':'s')+')';
   }
   function shown(i){ return (i.onHand==null ? (i.level==null?'—':i.level) : i.onHand); }
+  function updatePortal(){ document.getElementById('portal').href = 'store_manager.html' + (OUTLET?('?outlet='+encodeURIComponent(OUTLET)):''); }
 
   function switchView(v){
     VIEW=v;
-    document.body.classList.toggle('entry-mode', isEntry(v));
-    ['count','levels','order','delivery','perish'].forEach(function(x){
-      document.getElementById('tab-'+x).classList.toggle('on', x===v);
-      document.getElementById('view-'+x).classList.toggle('on', x===v);
-    });
-    document.getElementById('title').textContent =
-      v==='count'?'Stock Count':v==='levels'?'Stock Levels':v==='order'?'Weekly Order':v==='perish'?'Milk & Whip':'Log Delivery';
+    document.getElementById('tab-count').classList.toggle('on', v==='count');
+    document.getElementById('tab-delivery').classList.toggle('on', v==='delivery');
+    document.getElementById('view-count').classList.toggle('on', v==='count');
+    document.getElementById('view-delivery').classList.toggle('on', v==='delivery');
+    document.getElementById('title').textContent = (v==='delivery'?'Log Delivery':'Stock Count');
     document.getElementById('saveBtn').classList.toggle('deliv', v==='delivery');
-    if(isEntry(v)) loadEntry(); else if(v==='perish') loadPerishables(); else loadLevels();
+    loadEntry();
   }
   function setFreq(f){
     if(f===FREQ) return;
@@ -244,7 +176,6 @@
     document.getElementById('fq-weekly').classList.toggle('on', f==='Weekly');
     renderCountList(); renderCountBanner(); updateCounter();
   }
-
   function renderOutlets(list, current){
     var seg=document.getElementById('seg');
     if(!list || list.length<2){ seg.style.display='none'; return; }
@@ -257,7 +188,7 @@
     if(o===OUTLET) return;
     OUTLET=o; OVERRIDE={Daily:false, Weekly:false};
     try{ localStorage.setItem('gm_outlet', o); }catch(e){}
-    if(isEntry(VIEW)) loadEntry(); else if(VIEW==='perish') loadPerishables(); else loadLevels();
+    updatePortal(); loadEntry();
   }
 
   // ==================== ENTRY (count + delivery share one fetch) ====================
@@ -267,7 +198,7 @@
     document.getElementById(box).innerHTML='<div class="loading">Loading…</div>';
     fetch(url).then(function(r){return r.json();}).then(function(s){
       if(!s.ok) throw new Error(s.error||'load failed');
-      STATE=s; if(s.outlet) OUTLET=s.outlet;
+      STATE=s; if(s.outlet) OUTLET=s.outlet; updatePortal();
       renderOutlets(outletsList(s), OUTLET);
       document.getElementById('date').value=s.today;
       document.getElementById('ddate').value=s.today;
@@ -385,7 +316,6 @@
     document.getElementById('counter').textContent = !nm ? 'Enter your name to start' : (done+' / '+total+' '+FREQ.toLowerCase());
     btn.disabled = (done===0 || !nm);
   }
-
   function submitEntry(){ if(VIEW==='delivery') saveDelivery(); else save(); }
 
   // ---- count drafts ----
@@ -416,7 +346,6 @@
     try{ localStorage.setItem('gm_staff', name); }catch(e){}
     post({ outlet:OUTLET, date:val('date'), staff:name, counts:entered }, function(){ clearDraft(); OVERRIDE[FREQ]=false; loadEntry(); });
   }
-
   function saveDelivery(){
     var name=val('dstaff');
     if(!name){ document.getElementById('dstaff').classList.add('miss'); toast('Enter your name first',true); return; }
@@ -429,7 +358,6 @@
       loadEntry();
     });
   }
-
   function post(payload, onOk){
     var btn=document.getElementById('saveBtn'); btn.disabled=true; var lbl=btn.textContent; btn.textContent='Saving…';
     fetch(WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
@@ -440,131 +368,11 @@
       }).catch(function(e){ btn.disabled=false; btn.textContent=lbl; toast('⚠ '+e.message,true); });
   }
 
-  // ==================== LEVELS + ORDER ====================
-  function loadLevels(){
-    var url = WEBAPP_URL + '?view=levels' + (OUTLET?('&outlet='+encodeURIComponent(OUTLET)):'');
-    document.getElementById('list').innerHTML='<div class="loading">Loading…</div>';
-    document.getElementById('orderlist').innerHTML='<div class="loading">Loading…</div>';
-    fetch(url).then(function(r){return r.json();}).then(function(s){
-      if(!s.ok) throw new Error(s.error||'load failed');
-      LEVELS=s; if(s.outlet) OUTLET=s.outlet;
-      renderOutlets(outletsList(s), OUTLET);
-      document.getElementById('sub').textContent='As of '+s.generatedAt;
-      renderLevels(s); renderOrder(s);
-    }).catch(function(e){
-      document.getElementById('list').innerHTML='<div class="loading">Could not load.<br><small>'+e.message+'</small></div>';
-    });
-  }
-  function statusRank(st){ return st==='OUT'?0:(st==='LOW'?1:2); }
-  function sortByLow(items){ return items.slice().sort(function(a,b){
-    var d=statusRank(a.status)-statusRank(b.status); if(d!==0) return d;
-    var ra=(a.runway==null?1e9:a.runway), rb=(b.runway==null?1e9:b.runway); return ra-rb; }); }
-
-  function renderLevels(s){
-    document.getElementById('levels-last').innerHTML =
-      fmtLast(s.lastDaily,'Daily') + '<br>' + fmtLast(s.lastWeekly,'Weekly');
-    var html='';
-    sortByLow(s.items).forEach(function(i){
-      var big=shown(i);
-      var use=(i.usedDaily?(i.usedDaily+'/day'):'—');
-      var run=(i.runway==null?'':' · '+i.runway+'d left');
-      var recv=(i.receivedSince>0)?(' · <span class="recv">counted '+(i.level==null?'—':i.level)+' +'+i.receivedSince+'</span>'):'';
-      var lowCls=(i.status==='LOW'||i.status==='OUT')?' low':'';
-      html+='<div class="lrow'+lowCls+'"><div class="info">'+
-          '<div class="name">'+esc(i.item)+'</div>'+
-          '<div class="meta">'+esc(i.category)+' · '+use+run+recv+'</div>'+
-        '</div><div class="lvl">'+
-          '<div class="big">'+big+'</div><div class="u">'+esc(i.countUnit)+'</div>'+
-          '<div class="pill '+i.status+'">'+i.status+'</div>'+
-        '</div></div>';
-    });
-    document.getElementById('list').innerHTML=html;
-  }
-
-  function byRunway(a,b){ var ra=(a.runway==null?1e9:a.runway), rb=(b.runway==null?1e9:b.runway); return ra-rb; }
-  function orderRow(i){
-    var run=(i.runway==null?'':i.runway+' days left');
-    var w1=i.order1w||0, w2=i.order2w||0;
-    var qty='<div class="opt"><span class="lbl">1 wk</span>'+w1+' '+esc(i.buyUnit)+'</div>'+
-            '<div class="opt"><span class="lbl">2 wk</span>'+w2+' '+esc(i.buyUnit)+'</div>';
-    return '<div class="orow"><div class="info">'+
-        '<div class="name">'+esc(i.item)+'</div>'+
-        '<div class="sub">have '+(shown(i)==='—'?'—':(shown(i)+' '+esc(i.countUnit)))+(run?(' · '+run):'')+'</div>'+
-      '</div><div class="qty">'+qty+'</div></div>';
-  }
-  function renderOrder(s){
-    document.getElementById('order-last').innerHTML = fmtLast(s.lastDaily,'Daily') + '<br>' + fmtLast(s.lastWeekly,'Weekly');
-    // only items actually running low — and NOT milk/whip (those have their own tab)
-    var need = s.items.filter(function(i){ return (i.status==='LOW'||i.status==='OUT') && i.category!=='Milk & Whip'; });
-    if(!need.length){
-      document.getElementById('orderlist').innerHTML='<div class="bigok">✅ Nothing to order right now.</div>'; return;
-    }
-    // group by supplier
-    var groups={};
-    need.forEach(function(i){ var sup=(i.supplier||'').trim()||'__none__'; (groups[sup]=groups[sup]||[]).push(i); });
-    var names=Object.keys(groups).filter(function(k){return k!=='__none__';}).sort();
-    if(groups['__none__']) names.push('__none__');   // ungrouped (syrups, crumbs…) at the bottom
-    var html='';
-    names.forEach(function(sup){
-      html+='<div class="cat">'+(sup==='__none__'?'No supplier set':esc(sup))+'</div>';
-      groups[sup].sort(byRunway).forEach(function(i){ html+=orderRow(i); });
-    });
-    document.getElementById('orderlist').innerHTML=html;
-  }
-
-  // ==================== MILK & WHIP ====================
-  function loadPerishables(){
-    var url = WEBAPP_URL + '?view=perishables' + (OUTLET?('&outlet='+encodeURIComponent(OUTLET)):'');
-    document.getElementById('perishlist').innerHTML='<div class="loading">Loading…</div>';
-    fetch(url).then(function(r){return r.json();}).then(function(s){
-      if(!s.ok) throw new Error(s.error||'load failed');
-      if(s.outlet) OUTLET=s.outlet;
-      renderOutlets(outletsList(s), OUTLET);
-      document.getElementById('sub').textContent='As of '+s.generatedAt+' · today is '+s.todayName;
-      document.getElementById('perish-last').innerHTML = fmtLast(s.lastDaily,'Daily');
-      renderPerishables(s);
-    }).catch(function(e){ document.getElementById('perishlist').innerHTML='<div class="loading">Could not load.<br><small>'+e.message+'</small></div>'; });
-  }
-  function sparkline(rec){
-    if(!rec||!rec.length) return '<span style="font-size:11.5px;color:var(--muted)">no trend yet</span>';
-    var max=Math.max.apply(null, rec.concat([0.001])), w=6, g=3, h=24, bars='';
-    rec.forEach(function(v,i){ var bh=Math.max(1,Math.round((v/max)*h)); bars+='<rect x="'+(i*(w+g))+'" y="'+(h-bh)+'" width="'+w+'" height="'+bh+'" rx="1"></rect>'; });
-    return '<svg class="spark" viewBox="0 0 '+(rec.length*(w+g))+' '+h+'" width="'+(rec.length*(w+g))+'" height="'+h+'">'+bars+'</svg>';
-  }
-  function trendIcon(t){
-    if(t==='up')   return '<span class="tr up">▲ using more</span>';
-    if(t==='down') return '<span class="tr down">▼ using less</span>';
-    return '<span class="tr flat">▬ steady</span>';
-  }
-  function renderPerishables(s){
-    if(!s.items||!s.items.length){ document.getElementById('perishlist').innerHTML='<div class="bigok">No milk / whip items.</div>'; return; }
-    var html='';
-    s.items.forEach(function(i){
-      var big=(i.onHand==null?'—':i.onHand), run=(i.runway==null?'':i.runway+'d left');
-      html+='<div class="pcard">'+
-        '<div class="ptop"><div><div class="pname">'+esc(i.item)+'</div>'+
-          (i.schedule?'<div class="psched">'+esc(i.schedule)+'</div>':'')+'</div>'+
-          '<div class="phave"><div class="big">'+big+'</div><div class="u">'+esc(i.countUnit)+(run?(' · '+run):'')+'</div></div>'+
-        '</div>'+
-        '<div class="prow2">'+sparkline(i.recent)+trendIcon(i.trend)+'<span class="puse">~'+i.usedDaily+'/day</span></div>';
-      if(i.perDay){
-        html+='<div class="pdays">'+i.perDay.map(function(d){
-          return '<div class="pd'+(d.today?' today':'')+'"><div class="d">'+d.name+'</div><div class="n">'+d.upTo+'</div><div class="u">'+esc(i.countUnit)+'</div></div>';
-        }).join('')+'</div>'+
-        '<div class="pcap">On each delivery day, top the fridge up to that many '+esc(i.countUnit)+'s'+
-          (i.ceiling!=null?(' (cap '+i.ceiling+')'):'')+'. Today is highlighted.</div>';
-      } else {
-        html+='<div class="pcap">Top up: '+(i.orderBuy>=1?('order '+i.orderBuy+' '+esc(i.buyUnit)):'nothing needed right now')+'.</div>';
-      }
-      html+='</div>';
-    });
-    document.getElementById('perishlist').innerHTML=html;
-  }
-
   function toast(m,err){var t=document.getElementById('toast');t.textContent=m;t.className='show'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='';},4000);}
 
   try{ document.getElementById('staff').value = localStorage.getItem('gm_staff')||''; }catch(e){}
   OUTLET = savedOutlet() || FALLBACK_OUTLETS[0];
+  updatePortal();
   loadEntry();
 </script>
 </body>
