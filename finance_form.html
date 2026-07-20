@@ -51,6 +51,9 @@
   .rc .money input{padding:11px 11px 11px 4px;font-size:15px}
   .rc .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
   .empty{color:var(--muted);font-size:13.5px;font-weight:600;text-align:center;padding:16px 0}
+  .addmore{width:100%;margin-top:12px;padding:15px;border:1.5px dashed var(--accent);background:var(--accent-soft);
+           color:var(--accent);border-radius:13px;font-family:inherit;font-size:15px;font-weight:800}
+  .addmore:disabled{border-color:var(--line);background:#fafaf8;color:var(--muted)}
 
   .footer{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:saturate(180%) blur(8px);
           border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
@@ -101,10 +104,16 @@
   </div>
 
   <div class="lbl">Receipts <span class="req">*</span></div>
-  <div class="drop"><input type="file" id="file" accept="image/*" multiple onchange="onFiles(this)">
-    <div class="ic">📷</div><p>Tap to add receipts — you can pick several at once</p></div>
+  <div class="drop" id="drop"><input type="file" id="file" accept="image/*" multiple onchange="onFiles(this)">
+    <div class="ic">📷</div><p>Tap to add receipts — up to 5 at a time</p></div>
 
   <div id="cards"><div class="empty" id="emptyMsg">No receipts yet</div></div>
+
+  <!-- separate picker so "add more" works even when the phone camera returns one photo per tap -->
+  <input type="file" id="fileMore" accept="image/*" multiple onchange="onFiles(this)" style="display:none">
+  <button class="addmore" id="addMore" onclick="document.getElementById('fileMore').click()" style="display:none">
+    ＋ Add more receipts
+  </button>
 </main>
 
 <div id="done">
@@ -124,7 +133,9 @@
 
   var FORM='petty', CFG=null, ITEMS=[], UID=0;
   var MAX_PX = 1600, JPEG_Q = 0.82;   // receipts are downscaled before upload so a
-                                      // 10-photo batch doesn't blow the POST size limit
+                                      // big batch doesn't blow the POST size limit
+  var MAX_PER_PICK = 5;               // how many files one tap of the picker accepts
+  var MAX_TOTAL = 20;                 // total receipts in a single submission
 
   function val(id){ var e=document.getElementById(id); return e ? (e.value||'').trim() : ''; }
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -173,16 +184,32 @@
   // ---------- receipts ----------
   function onFiles(inp){
     var files = Array.prototype.slice.call(inp.files||[]);
+    inp.value='';                       // so picking the same file again still fires onchange
     if(!files.length) return;
-    var pending = files.length;
+
+    var note='';
+    if(files.length > MAX_PER_PICK){    // trim, don't reject — staff shouldn't have to redo the pick
+      files = files.slice(0, MAX_PER_PICK);
+      note=' (max '+MAX_PER_PICK+' per pick — tap Add more for the rest)';
+    }
+    var room = MAX_TOTAL - ITEMS.length;
+    if(room <= 0){ toast('Max '+MAX_TOTAL+' receipts per submission — submit these first',true); return; }
+    if(files.length > room){ files = files.slice(0, room); note=' ('+MAX_TOTAL+' receipt limit reached)'; }
+
+    var added = files.length, pending = added;
     files.forEach(function(f){
       shrink(f, function(dataUrl, mime){
         ITEMS.push({ id:++UID, dataUrl:dataUrl, mime:mime,
                      category:'', vendor:'', description:'', amount:'' });
-        if(--pending===0){ renderCards(); toast(files.length+' receipt'+(files.length>1?'s':'')+' added'); }
+        if(--pending===0){
+          renderCards();
+          toast(added+' receipt'+(added>1?'s':'')+' added'+note);
+          // jump to the first new card so it's obvious there's more to fill in
+          var first=document.getElementById('rc'+ITEMS[ITEMS.length-added].id);
+          if(first) first.scrollIntoView({behavior:'smooth',block:'center'});
+        }
       });
     });
-    inp.value='';   // so picking the same file again still fires onchange
   }
   // draw the photo onto a canvas at a sane size — keeps the batch payload small
   function shrink(file, done){
@@ -221,6 +248,14 @@
   }
   function renderCards(){
     var box=document.getElementById('cards');
+    // big drop zone while empty; once there are cards it shrinks to the Add more button
+    document.getElementById('drop').style.display = ITEMS.length ? 'none' : 'block';
+    var more=document.getElementById('addMore');
+    more.style.display = ITEMS.length ? 'block' : 'none';
+    var full = ITEMS.length >= MAX_TOTAL;
+    more.disabled = full;
+    more.textContent = full ? ('Max '+MAX_TOTAL+' receipts') : ('＋ Add more receipts  ('+ITEMS.length+' added)');
+
     if(!ITEMS.length){ box.innerHTML='<div class="empty">No receipts yet</div>'; validate(); return; }
     var cats=(CFG&&CFG.categories)||[], vends=(CFG&&CFG.vendors)||[];
     box.innerHTML = ITEMS.map(function(it,i){
@@ -300,7 +335,7 @@
   }
   function showDone(){ document.getElementById('form').style.display='none'; document.querySelector('.footer').style.display='none'; document.getElementById('done').style.display='block'; }
   function resetForm(){
-    ITEMS=[]; document.getElementById('file').value=''; renderCards();
+    ITEMS=[]; document.getElementById('file').value=''; document.getElementById('fileMore').value=''; renderCards();
     document.getElementById('form').style.display='block'; document.querySelector('.footer').style.display='block';
     document.getElementById('done').style.display='none'; validate();
     window.scrollTo(0,0);
